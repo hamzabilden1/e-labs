@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel — E-Labs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDK — jsdelivr.net üzerinden (Brave Shield uyumlu) -->
+    <script src="https://cdn.jsdelivr.net/npm/firebase@10.7.1/firebase-app-compat.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/firebase@10.7.1/firebase-auth-compat.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/firebase@10.7.1/firebase-firestore-compat.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root { --primary: #06b6d4; --secondary: #0891b2; --accent: #10b981; --bg: #0f172a; --card: #1e293b; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: #e2e8f0; }
+        .card { background: var(--card); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; }
+        .stat-card { background: linear-gradient(135deg, var(--card) 0%, rgba(6,182,212,0.1) 100%); }
+        .glass-panel { background: rgba(30,41,59,0.8); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(12px); }
+        .table-row { cursor: pointer; transition: background 0.15s; }
+        .table-row:hover { background: rgba(255,255,255,0.05); }
+        .modal-row { border-bottom: 1px solid rgba(255,255,255,0.05); padding: 10px 0; }
+        .modal-label { color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
+        .modal-value { color: #e2e8f0; word-break: break-word; }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div id="login-screen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="card p-8 w-full max-w-md text-center">
+            <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center mx-auto mb-6">
+                <span class="text-4xl">🔐</span>
+            </div>
+            <h1 class="text-2xl font-bold text-white mb-2">Admin Panel</h1>
+            <p class="text-gray-400 text-sm mb-6">Devam etmek için Google hesabınızla giriş yapın</p>
+            <button id="login-btn" class="w-full bg-white text-gray-800 font-semibold py-3 px-4 rounded-xl hover:bg-gray-100 transition flex items-center justify-center gap-3">
+                <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                Google ile Giriş Yap
+            </button>
+            <p id="login-error" class="text-red-400 text-sm mt-4 hidden"></p>
+        </div>
+    </div>
+
+    <div id="dashboard" class="hidden">
+        <header class="border-b border-white/10 bg-black/30 backdrop-blur sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                        <span class="text-xl">🧪</span>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg text-white">E-Labs Dashboard</h1>
+                        <p id="user-info" class="text-xs text-gray-400">-</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <a href="/" class="text-sm text-cyan-400 hover:text-cyan-300 transition">Ana Sayfa</a>
+                    <button id="logout-btn" class="text-sm text-red-400 hover:text-red-300 transition">Çıkış Yap</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-7xl mx-auto px-4 py-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="stat-card rounded-xl p-5"><p class="text-gray-400 text-xs mb-1">Toplam Anket</p><p id="stat-surveys" class="text-3xl font-bold text-white">-</p></div>
+                <div class="stat-card rounded-xl p-5"><p class="text-gray-400 text-xs mb-1">Toplam Olay</p><p id="stat-events" class="text-3xl font-bold text-white">-</p></div>
+                <div class="stat-card rounded-xl p-5"><p class="text-gray-400 text-xs mb-1">İletişim Formu</p><p id="stat-contacts" class="text-3xl font-bold text-white">-</p></div>
+                <div class="stat-card rounded-xl p-5"><p class="text-gray-400 text-xs mb-1">Benzersiz Oturum</p><p id="stat-sessions" class="text-3xl font-bold text-white">-</p></div>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6 mb-8">
+                <div class="card p-6"><h3 class="font-semibold text-white mb-4">Kullanıcı Rol Dağılımı</h3><div class="h-64"><canvas id="chart-roles"></canvas></div></div>
+                <div class="card p-6"><h3 class="font-semibold text-white mb-4">En Çok Kullanılan Deneyler</h3><div class="h-64"><canvas id="chart-experiments"></canvas></div></div>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6 mb-8">
+                <div class="card p-6"><h3 class="font-semibold text-white mb-4">Ortalama Puan (1-5)</h3><div class="h-64"><canvas id="chart-ratings"></canvas></div></div>
+                <div class="card p-6"><h3 class="font-semibold text-white mb-4">Günlük Kullanım</h3><div class="h-64"><canvas id="chart-daily"></canvas></div></div>
+            </div>
+
+            <div class="card p-6 mb-8">
+                <h3 class="font-semibold text-white mb-4">📊 Puan Dağılımı (Kaç Kişi Hangi Puanı Verdi)</h3>
+                <div id="rating-detail" class="space-y-6"></div>
+            </div>
+
+            <div class="grid gap-6">
+                <div class="card p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-semibold text-white">📋 Anket Yanıtları</h3>
+                        <span id="survey-count" class="text-xs text-gray-400">-</span>
+                    </div>
+                    <div class="overflow-x-auto max-h-96 overflow-y-auto rounded-lg">
+                        <table class="w-full text-sm">
+                            <thead class="sticky top-0 bg-[#1e293b] z-10">
+                                <tr class="text-left text-gray-400 border-b border-white/10 text-xs">
+                                    <th class="py-2 pr-3 font-medium">Zaman</th>
+                                    <th class="py-2 pr-3 font-medium">Rol</th>
+                                    <th class="py-2 pr-3 font-medium">📱 Görsel</th>
+                                    <th class="py-2 pr-3 font-medium">🖱️ Kolaylık</th>
+                                    <th class="py-2 pr-3 font-medium">📚 Eğitim</th>
+                                    <th class="py-2 pr-3 font-medium">📧 Email</th>
+                                    <th class="py-2 font-medium">Yorum</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-surveys" class="text-xs"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-semibold text-white">📬 İletişim Formları</h3>
+                        <span id="contact-count" class="text-xs text-gray-400">-</span>
+                    </div>
+                    <div class="overflow-x-auto max-h-96 overflow-y-auto rounded-lg">
+                        <table class="w-full text-sm">
+                            <thead class="sticky top-0 bg-[#1e293b] z-10">
+                                <tr class="text-left text-gray-400 border-b border-white/10 text-xs">
+                                    <th class="py-2 pr-3 font-medium">Zaman</th>
+                                    <th class="py-2 pr-3 font-medium">Konu</th>
+                                    <th class="py-2 pr-3 font-medium">📧 Email</th>
+                                    <th class="py-2 font-medium">Detay</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-contacts" class="text-xs"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="detail-modal" class="hidden fixed inset-0 z-[600] flex items-center justify-center p-4" style="background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);">
+        <div class="glass-panel w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl border border-cyan-500/30" style="box-shadow:0 0 40px rgba(0,255,255,0.1);">
+            <div class="sticky top-0 bg-[#1e293b] z-10 flex items-center justify-between p-5 border-b border-white/10">
+                <h3 id="modal-title" class="font-bold text-white text-lg"></h3>
+                <button onclick="closeModal()" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="modal-body" class="p-5 space-y-2 text-sm"></div>
+        </div>
+    </div>
+
+    <script>
+    var firebaseConfig = {
+        apiKey: "AIzaSyBck7QDmBTPpFKltp59MQyS-5JF2VcXZrw",
+        authDomain: "project-660aa30b-85ff-401a-a2e.firebaseapp.com",
+        projectId: "project-660aa30b-85ff-401a-a2e",
+        storageBucket: "project-660aa30b-85ff-401a-a2e.firebasestorage.app",
+        messagingSenderId: "53616158151",
+        appId: "1:53616158151:web:d26bfada2c30e08ba4a5e2"
+    };
+    firebase.initializeApp(firebaseConfig);
+    var auth = firebase.auth();
+    var db = firebase.firestore();
+
+    // NOT: Paneli görebilmek için email adresinizin aşağıdakilerden biri olması gerekir.
+    var allowedEmails = ['hamzabilden1@gmail.com','mucahitcaykara06@gmail.com','gulcanozturk84@gmail.com','abdullahmucahit0640@gmail.com','mucahitishesabi@gmail.com'];
+
+    auth.onAuthStateChanged(function(user) {
+        if (user) {
+            var email = (user.email || '').toLowerCase().trim();
+            var ok = false;
+            for (var i = 0; i < allowedEmails.length; i++) {
+                if (allowedEmails[i].toLowerCase().trim() === email) { ok = true; break; }
+            }
+            if (ok) { showDashboard(user); }
+            else {
+                auth.signOut();
+                var el = document.getElementById('login-error');
+                el.textContent = 'Bu hesabın erişim yetkisi yok: ' + user.email;
+                el.classList.remove('hidden');
+            }
+        }
+    });
+
+    document.getElementById('login-btn').addEventListener('click', function() {
+        var btn = document.getElementById('login-btn');
+        var errEl = document.getElementById('login-error');
+        errEl.classList.add('hidden');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(function(e) {
+            errEl.textContent = 'Giriş başarısız: ' + e.message;
+            errEl.classList.remove('hidden');
+            btn.disabled = false;
+            btn.innerHTML = 'Google ile Giriş Yap';
+        });
+    });
+    document.getElementById('logout-btn').addEventListener('click', function() { auth.signOut(); });
+
+    function showDashboard(user) {
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('dashboard').classList.remove('hidden');
+        document.getElementById('user-info').textContent = user.email;
+        loadData();
+    }
+
+    function showModal(title, rows) {
+        document.getElementById('modal-title').textContent = title;
+        var body = document.getElementById('modal-body');
+        var html = '';
+        for (var i = 0; i < rows.length; i++) {
+            html += '<div class="modal-row"><p class="modal-label">' + rows[i][0] + '</p><p class="modal-value">' + (rows[i][1] || '-') + '</p></div>';
+        }
+        body.innerHTML = html;
+        document.getElementById('detail-modal').classList.remove('hidden');
+    }
+
+    function closeModal() { document.getElementById('detail-modal').classList.add('hidden'); }
+    document.getElementById('detail-modal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+
+    function stars(n) {
+        if (!n) return '-';
+        return '<span style="color:#facc15">' + Array(n+1).join('★') + '</span><span style="color:#374151">' + Array(6-n).join('☆') + '</span>';
+    }
+
+    function roleLabel(r) { return r === 'student' ? '🎓 Öğrenci' : r === 'teacher' ? '📚 Öğretmen' : '👁️ Ziyaretçi'; }
+    function subjectLabel(s) { return ({feature:'🚀 Yeni Özellik',bug:'🐛 Hata Bildirimi',visual:'🎨 Görsel İyileştirme',other:'💬 Diğer'})[s] || s || '-'; }
+
+    var allRatingKeys = {
+        'Genel Sorular (Herkese)': [
+            {key:'common_visual', label:'📱 Görsel Gerçekçilik', color:'#a855f7'},
+            {key:'common_ease', label:'🖱️ Kullanım Kolaylığı', color:'#10b981'},
+            {key:'common_education', label:'📚 Eğitici İçerik', color:'#06b6d4'}
+        ],
+        '🎓 Öğrenci': [
+            {key:'s_before', label:'🤓 Simülasyon Öncesi Bilgi', color:'#10b981'},
+            {key:'s_after', label:'🤩 Simülasyon Sonrası Bilgi', color:'#06b6d4'},
+            {key:'s_no_fear', label:'🧪 Özgür Hissettim', color:'#8b5cf6'},
+            {key:'s_3d_better', label:'🔬 3D Daha İyi Anlattı', color:'#f59e0b'},
+            {key:'s_more_fun', label:'🎮 Daha Eğlenceliydi', color:'#ef4444'},
+            {key:'s_repeat', label:'🔄 Tekrar İsterim', color:'#ec4899'},
+            {key:'s_ai_helpful', label:'🤖 AI Yardımcı Oldu', color:'#14b8a6'}
+        ],
+        '📚 Öğretmen': [
+            {key:'t_learning_ease', label:'📖 Anlamayı Kolaylaştırma', color:'#8b5cf6'},
+            {key:'t_interest', label:'🔥 Derse İlgi Artışı', color:'#f59e0b'},
+            {key:'t_curriculum', label:'📋 Müfredat Uyumu', color:'#06b6d4'}
+        ],
+        '👁️ Ziyaretçi': [
+            {key:'v_engagement', label:'👁️ Öğrenci İlgisi', color:'#10b981'},
+            {key:'v_equality', label:'⚖️ Fırsat Eşitliği', color:'#8b5cf6'},
+            {key:'v_professional', label:'💼 Profesyonellik', color:'#f59e0b'},
+            {key:'v_standardize', label:'🏫 Standart Hale Getirmeli', color:'#06b6d4'}
+        ]
+    };
+
+    async function loadData() {
+        try {
+            var surveysSnap = await db.collection('surveys').orderBy('_timestamp','desc').limit(200).get();
+            var eventsSnap = await db.collection('events').orderBy('_timestamp','desc').limit(500).get();
+            var contactsSnap = await db.collection('contacts').orderBy('_timestamp','desc').limit(200).get();
+
+            var surveys = surveysSnap.docs.map(function(d) { var x = d.data(); x.id = d.id; return x; });
+            var events = eventsSnap.docs.map(function(d) { return d.data(); });
+            var contacts = contactsSnap.docs.map(function(d) { var x = d.data(); x.id = d.id; return x; });
+
+            document.getElementById('stat-surveys').textContent = surveys.length;
+            document.getElementById('stat-events').textContent = events.length;
+            document.getElementById('stat-contacts').textContent = contacts.length;
+            var sessions = {};
+            for (var i = 0; i < surveys.length; i++) { if (surveys[i]._sessionId) sessions[surveys[i]._sessionId] = 1; }
+            for (var j = 0; j < events.length; j++) { if (events[j].session) sessions[events[j].session] = 1; }
+            document.getElementById('stat-sessions').textContent = Object.keys(sessions).length;
+
+            // Role chart
+            var roles = {student:0, teacher:0, visitor:0};
+            for (var k = 0; k < surveys.length; k++) {
+                if (roles.hasOwnProperty(surveys[k].role)) roles[surveys[k].role]++;
+            }
+            new Chart(document.getElementById('chart-roles'), {
+                type: 'doughnut',
+                data: { labels: ['Öğrenci','Öğretmen','Ziyaretçi'], datasets: [{ data: [roles.student,roles.teacher,roles.visitor], backgroundColor: ['rgba(16,185,129,0.8)','rgba(139,92,246,0.8)','rgba(245,158,11,0.8)'], borderWidth:0 }] },
+                options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom',labels:{color:'#94a3b8'}}} }
+            });
+
+            // Experiments chart
+            var expCounts = {};
+            for (var m = 0; m < events.length; m++) {
+                var e = events[m];
+                if (e.event === 'experiment_start' && e.params && e.params.expId) {
+                    expCounts[e.params.expId] = (expCounts[e.params.expId] || 0) + 1;
+                }
+            }
+            var topExps = [];
+            for (var expKey in expCounts) { topExps.push([expKey, expCounts[expKey]]); }
+            topExps.sort(function(a,b){ return b[1] - a[1]; });
+            topExps = topExps.slice(0, 6);
+            new Chart(document.getElementById('chart-experiments'), {
+                type: 'bar',
+                data: { labels: topExps.map(function(x){ return x[0]; }), datasets: [{ data: topExps.map(function(x){ return x[1]; }), backgroundColor:'rgba(6,182,212,0.8)', borderRadius:6 }] },
+                options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{ticks:{color:'#94a3b8'},grid:{display:false}},y:{ticks:{color:'#94a3b8'},grid:{color:'rgba(255,255,255,0.05)'}}} }
+            });
+
+            // Puanları hesapla
+            var rData = {};
+            var categories = Object.keys(allRatingKeys);
+            for (var ci = 0; ci < categories.length; ci++) {
+                var qs = allRatingKeys[categories[ci]];
+                for (var qi = 0; qi < qs.length; qi++) {
+                    rData[qs[qi].key] = {sum:0, count:0, dist:{1:0,2:0,3:0,4:0,5:0}};
+                }
+            }
+            for (var si = 0; si < surveys.length; si++) {
+                var a = surveys[si].answers || {};
+                for (var ck = 0; ck < categories.length; ck++) {
+                    var qlist = allRatingKeys[categories[ck]];
+                    for (var qk = 0; qk < qlist.length; qk++) {
+                        var v = a[qlist[qk].key];
+                        if (v === true) v = 5;
+                        if (v && v >= 1 && v <= 5) {
+                            rData[qlist[qk].key].sum += v;
+                            rData[qlist[qk].key].count++;
+                            rData[qlist[qk].key].dist[v]++;
+                        }
+                    }
+                }
+            }
+
+            // Chart - genel sorular
+            var genQs = allRatingKeys['Genel Sorular (Herkese)'];
+            new Chart(document.getElementById('chart-ratings'), {
+                type: 'bar',
+                data: {
+                    labels: genQs.map(function(q){ return q.label.split(' ').slice(1).join(' '); }),
+                    datasets: [{ data: genQs.map(function(q){ return rData[q.key].count ? (rData[q.key].sum/rData[q.key].count).toFixed(1) : 0; }), backgroundColor: genQs.map(function(q){ return q.color; }), borderRadius:6 }]
+                },
+                options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{min:0,max:5,ticks:{color:'#94a3b8'},grid:{color:'rgba(255,255,255,0.05)'}},y:{ticks:{color:'#e2e8f0'},grid:{display:false}}} }
+            });
+
+            // Rating detail
+            var ratingEl = document.getElementById('rating-detail');
+            ratingEl.innerHTML = '';
+            for (var cidx = 0; cidx < categories.length; cidx++) {
+                var cat = categories[cidx];
+                var questions = allRatingKeys[cat];
+                var hasData = false;
+                for (var qi2 = 0; qi2 < questions.length; qi2++) {
+                    if (rData[questions[qi2].key].count > 0) { hasData = true; break; }
+                }
+                if (!hasData) continue;
+
+                var section = document.createElement('div');
+                section.className = 'bg-black/20 rounded-xl border border-white/5 overflow-hidden';
+
+                var isFirst = (cidx === 0);
+                var titleWrapper = document.createElement('div');
+                titleWrapper.className = 'flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-white/5 transition';
+                titleWrapper.onclick = (function(el) {
+                    return function() {
+                        var content = el.querySelector('.rating-content');
+                        var icon = el.querySelector('.toggle-icon');
+                        if (content.style.display === 'none') {
+                            content.style.display = '';
+                            icon.style.transform = 'rotate(0deg)';
+                        } else {
+                            content.style.display = 'none';
+                            icon.style.transform = 'rotate(-90deg)';
+                        }
+                    };
+                })(section);
+
+                var titleEl = document.createElement('h4');
+                titleEl.className = 'font-bold text-white text-base flex items-center gap-2';
+                titleEl.innerHTML = '<i class="fas fa-chevron-down toggle-icon text-xs text-gray-400 transition-transform duration-200" style="transform: ' + (isFirst ? 'rotate(0deg)' : 'rotate(-90deg)') + '"></i> ' + cat;
+                titleWrapper.appendChild(titleEl);
+                section.appendChild(titleWrapper);
+
+                var contentWrapper = document.createElement('div');
+                contentWrapper.className = 'rating-content px-5 pb-5';
+                contentWrapper.style.display = (isFirst ? '' : 'none');
+
+                var grid = document.createElement('div');
+                grid.className = 'grid grid-cols-1 md:grid-cols-3 gap-4';
+
+                for (var qi3 = 0; qi3 < questions.length; qi3++) {
+                    var q = questions[qi3];
+                    var d = rData[q.key];
+                    if (d.count === 0) continue;
+                    var avg = (d.sum / d.count).toFixed(2);
+                    var barsHtml = '';
+                    for (var n = 1; n <= 5; n++) {
+                        var pct = Math.round(d.dist[n] / d.count * 100);
+                        barsHtml += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="width:16px;text-align:right;font-size:11px;color:' + q.color + '">' + n + '</span><div style="flex:1;height:10px;background:rgba(255,255,255,0.1);border-radius:99px;overflow:hidden"><div style="width:' + pct + '%;background:' + q.color + ';height:100%"></div></div><span style="width:32px;font-size:11px;color:#94a3b8">' + d.dist[n] + '</span></div>';
+                    }
+                    var card = document.createElement('div');
+                    card.className = 'bg-white/5 rounded-lg p-3 border border-white/5';
+                    card.innerHTML = '<p style="font-size:12px;font-weight:500;margin-bottom:6px;color:' + q.color + ';word-break:break-word">' + q.label + '</p><p style="font-size:24px;font-weight:700;color:white;margin-bottom:2px">' + avg + '<span style="font-size:12px;font-weight:400;color:#94a3b8"> / 5</span></p><p style="font-size:11px;color:#94a3b8;margin-bottom:8px">' + d.count + ' kişi oy verdi</p>' + barsHtml;
+                    grid.appendChild(card);
+                }
+                contentWrapper.appendChild(grid);
+                section.appendChild(contentWrapper);
+                ratingEl.appendChild(section);
+            }
+            if (ratingEl.children.length === 0) {
+                ratingEl.innerHTML = '<p style="color:#94a3b8;font-size:14px;text-align:center;padding:20px">Henüz anket verisi yok.</p>';
+            }
+
+            // Daily chart
+            var daily = {};
+            for (var di = 0; di < surveys.length; di++) {
+                if (surveys[di]._timestamp) {
+                    var day = surveys[di]._timestamp.toDate().toLocaleDateString('tr-TR');
+                    daily[day] = (daily[day] || 0) + 1;
+                }
+            }
+            var days = [];
+            for (var dayKey in daily) { days.push([dayKey, daily[dayKey]]); }
+            days.sort(function(a,b){ return a[0].localeCompare(b[0]); });
+            days = days.slice(-14);
+            new Chart(document.getElementById('chart-daily'), {
+                type: 'line',
+                data: { labels: days.map(function(d){ return d[0]; }), datasets: [{ data: days.map(function(d){ return d[1]; }), borderColor:'rgba(6,182,212,0.8)', backgroundColor:'rgba(6,182,212,0.1)', fill:true, tension:0.4, pointBackgroundColor:'rgba(6,182,212,0.8)' }] },
+                options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{ticks:{color:'#94a3b8',maxRotation:45},grid:{display:false}},y:{ticks:{color:'#94a3b8'},grid:{color:'rgba(255,255,255,0.05)'}}} }
+            });
+
+            // Anket tablosu
+            document.getElementById('survey-count').textContent = surveys.length + ' yanıt';
+            var sTbody = document.getElementById('recent-surveys');
+            sTbody.innerHTML = '';
+            for (var suri = 0; suri < Math.min(surveys.length, 100); suri++) {
+                var s = surveys[suri];
+                var t = s._timestamp ? s._timestamp.toDate().toLocaleString('tr-TR') : '-';
+                var a = s.answers || {};
+                var comment = a.general_comment || '-';
+                var row = sTbody.insertRow(-1);
+                row.className = 'table-row border-b border-white/5';
+                row.onclick = (function(sv, tv) {
+                    return function() {
+                        var rows = [
+                            ['⏰ Zaman', tv],
+                            ['👤 Rol', roleLabel(sv.role)],
+                            ['📧 Email', sv.answers && sv.answers.contact_email ? sv.answers.contact_email : '-'],
+                            ['📱 Görsel', stars(sv.answers && sv.answers.common_visual) + ' (' + (sv.answers && sv.answers.common_visual || '-') + '/5)'],
+                            ['🖱️ Kolaylık', stars(sv.answers && sv.answers.common_ease) + ' (' + (sv.answers && sv.answers.common_ease || '-') + '/5)'],
+                            ['📚 Eğitim', stars(sv.answers && sv.answers.common_education) + ' (' + (sv.answers && sv.answers.common_education || '-') + '/5)']
+                        ];
+                        if (comment !== '-') rows.push(['💬 Genel Yorum', comment]);
+
+                        // Rol-özel
+                        var extras = [];
+                        if (sv.role === 'student') {
+                            if (sv.answers) {
+                                if (sv.answers.s_before) extras.push(['🤓 Öncesi Bilgi', stars(sv.answers.s_before) + ' (' + sv.answers.s_before + '/5)']);
+                                if (sv.answers.s_after) extras.push(['🤩 Sonrası Bilgi', stars(sv.answers.s_after) + ' (' + sv.answers.s_after + '/5)']);
+                                if (sv.answers.s_no_fear) extras.push(['🧪 Özgür Hissettim', '★ Seçildi']);
+                                if (sv.answers.s_3d_better) extras.push(['🔬 3D Daha İyi', '★ Seçildi']);
+                                if (sv.answers.s_more_fun) extras.push(['🎮 Daha Eğlenceli', '★ Seçildi']);
+                                if (sv.answers.s_repeat) extras.push(['🔄 Tekrar İsterim', '★ Seçildi']);
+                                if (sv.answers.s_ai_helpful) extras.push(['🤖 AI Yardımcı', '★ Seçildi']);
+                            }
+                        } else if (sv.role === 'teacher') {
+                            if (sv.answers) {
+                                if (sv.answers.t_learning_ease) extras.push(['📖 Anlamayı Kolaylaştırma', stars(sv.answers.t_learning_ease)]);
+                                if (sv.answers.t_interest) extras.push(['🔥 Derse İlgi', stars(sv.answers.t_interest)]);
+                                if (sv.answers.t_curriculum) extras.push(['📋 Müfredat Uyumu', stars(sv.answers.t_curriculum)]);
+                                if (sv.answers.t_desired_experiments) extras.push(['🧪 İstenen Deneyler', sv.answers.t_desired_experiments]);
+                            }
+                        } else if (sv.role === 'visitor') {
+                            if (sv.answers) {
+                                if (sv.answers.v_engagement) extras.push(['👁️ Öğrenci İlgisi', stars(sv.answers.v_engagement)]);
+                                if (sv.answers.v_equality) extras.push(['⚖️ Fırsat Eşitliği', stars(sv.answers.v_equality)]);
+                                if (sv.answers.v_professional) extras.push(['💼 Profesyonellik', stars(sv.answers.v_professional)]);
+                                if (sv.answers.v_standardize) extras.push(['🏫 Standart Hale Getirmeli', stars(sv.answers.v_standardize)]);
+                            }
+                        }
+                        rows = rows.concat(extras);
+                        showModal('📋 Anket Detayı — ' + tv, rows);
+                    };
+                })(s, t);
+
+                var cell0 = row.insertCell(-1); cell0.textContent = t; cell0.className = 'py-2 pr-3 text-gray-400 whitespace-nowrap';
+                var cell1 = row.insertCell(-1); cell1.textContent = roleLabel(s.role); cell1.className = 'py-2 pr-3';
+                var cell2 = row.insertCell(-1); cell2.innerHTML = stars(a.common_visual); cell2.className = 'py-2 pr-3';
+                var cell3 = row.insertCell(-1); cell3.innerHTML = stars(a.common_ease); cell3.className = 'py-2 pr-3';
+                var cell4 = row.insertCell(-1); cell4.innerHTML = stars(a.common_education); cell4.className = 'py-2 pr-3';
+                var cell5 = row.insertCell(-1); cell5.textContent = a.contact_email || '-'; cell5.className = 'py-2 pr-3 text-cyan-400';
+                var cell6 = row.insertCell(-1); cell6.innerHTML = comment !== '-' ? '<span style="word-break:break-word">' + comment + '</span>' : '-'; cell6.className = 'py-2';
+            }
+
+            // İletişim tablosu
+            document.getElementById('contact-count').textContent = contacts.length + ' form';
+            var cTbody = document.getElementById('recent-contacts');
+            cTbody.innerHTML = '';
+            for (var ci2 = 0; ci2 < Math.min(contacts.length, 100); ci2++) {
+                var c = contacts[ci2];
+                var ct = c._timestamp ? c._timestamp.toDate().toLocaleString('tr-TR') : '-';
+                var detail = c.title || c.experiment || c.area || '-';
+                var crow = cTbody.insertRow(-1);
+                crow.className = 'table-row border-b border-white/5';
+                crow.onclick = (function(cv, ct2) {
+                    return function() {
+                        var rows = [
+                            ['⏰ Zaman', ct2],
+                            ['🏷️ Konu', subjectLabel(cv.subject)],
+                            ['📧 Email', cv.email || '-']
+                        ];
+                        if (cv.title) rows.push(['🚀 Özellik Başlığı', cv.title]);
+                        if (cv.experiment) rows.push(['🧪 Deney', cv.experiment]);
+                        if (cv.area) rows.push(['🎨 Alan', cv.area]);
+                        if (cv.description) rows.push(['📝 Açıklama', cv.description]);
+                        showModal('📬 İletişim Formu — ' + ct2, rows);
+                    };
+                })(c, ct);
+                var c0 = crow.insertCell(-1); c0.textContent = ct; c0.className = 'py-2 pr-3 text-gray-400 whitespace-nowrap';
+                var c1 = crow.insertCell(-1); c1.innerHTML = subjectLabel(c.subject); c1.className = 'py-2 pr-3';
+                var c2 = crow.insertCell(-1); c2.textContent = c.email || '-'; c2.className = 'py-2 pr-3 text-cyan-400';
+                var c3 = crow.insertCell(-1); c3.innerHTML = detail !== '-' ? '<span style="word-break:break-word">' + detail + '</span>' : '-'; c3.className = 'py-2';
+            }
+        } catch (err) {
+            alert('Veriler yüklenirken hata: ' + err.message);
+        }
+    }
+    </script>
+</body>
+</html>

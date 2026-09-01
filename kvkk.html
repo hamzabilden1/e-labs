@@ -1,0 +1,95 @@
+<!--
+ _____     _        _    ____  ____  
+| ____|   | |      / \  | __ )/ ___| 
+|  _| - _ | |     / _ \ |  _ \\___ \ 
+| |___ | || |___ / ___ \| |_) |___) |
+|_____||_||_____/_/   \_\____/|____/ 
+
+E-LABS - Sanal Deney Laboratuvarı
+Bu yazılımın kopyalanması, izinsiz çoğaltılması ve paylaşılması kesinlikle yasaktır.
+© 2026 E-LabS Team. Tüm Hakları Saklıdır.
+-->
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KVKK Aydınlatma Metni — E-LabS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .kvkk-container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 40px;
+        }
+        .kvkk-content h1 { color: var(--secondary); font-size: 2rem; margin-bottom: 1.5rem; font-weight: 700; border-bottom: 2px solid rgba(0, 172, 193, 0.2); padding-bottom: 10px; }
+        .kvkk-content h2 { color: var(--accent); font-size: 1.25rem; margin-top: 2rem; margin-bottom: 1rem; font-weight: 600; }
+        .kvkk-content p { color: #ccc; line-height: 1.7; margin-bottom: 1rem; }
+        .kvkk-content ul { margin-bottom: 1rem; list-style-type: none; }
+        .kvkk-content li { color: #ccc; margin-bottom: 0.5rem; padding-left: 1.5rem; position: relative; }
+        .kvkk-content li::before { content: "•"; color: var(--secondary); position: absolute; left: 0; font-weight: bold; }
+    </style>
+</head>
+<body class="bg-dark text-white">
+    <div id="bg-particles" class="bg-particles"></div>
+
+    <nav class="glass-panel sticky top-0 z-50 m-4 px-4 py-3 flex justify-between items-center backdrop-blur-xl">
+        <div class="flex items-center gap-3 cursor-pointer" onclick="window.location.href='index.html'">
+            <i class="fas fa-flask text-3xl text-[var(--secondary)]"></i>
+            <h1 class="text-2xl font-bold tracking-wider">E-<span class="text-[var(--secondary)]">LABS</span></h1>
+        </div>
+        <a href="index.html" class="text-sm hover:text-[var(--secondary)] transition flex items-center gap-2">
+            <i class="fas fa-arrow-left"></i> Ana Sayfaya Dön
+        </a>
+    </nav>
+
+    <main class="container mx-auto px-4">
+        <div class="glass-panel kvkk-container animate-page-enter">
+            <div class="kvkk-content">
+                <h1>KVKK Aydınlatma Metni</h1>
+                
+                <p><strong>E-LabS Sanal Laboratuvar Platformu</strong> olarak, kişisel verilerinizin güvenliği hususuna azami hassasiyet göstermekteyiz. Bu kapsamda, 6698 sayılı Kişisel Verilerin Korunması Kanunu (“KVKK”) uyarınca veri sorumlusu sıfatıyla hazırladığımız bu aydınlatma metni ile sizleri bilgilendirmek isteriz.</p>
+
+                <h2>1. Veri Sorumlusunun Kimliği</h2>
+                <p>İşbu platform, eğitim amaçlı bir sanal laboratuvar projesi olup, tüm veri işleme faaliyetleri E-LabS Ekibi tarafından yürütülmektedir.</p>
+
+                <h2>2. İşlenen Kişisel Veriler</h2>
+                <p>Platformumuzu kullandığınızda aşağıdaki verileriniz işlenebilir:</p>
+                <ul>
+                    <li><strong>Anket Verileri:</strong> Rolünüz (öğrenci, öğretmen vb.), deneyim puanlarınız ve görüşleriniz.</li>
+                    <li><strong>Deney Verileri:</strong> Yaptığınız simülasyonların sonuçları ve kullanım istatistikleri.</li>
+                    <li><strong>İletişim Verileri:</strong> Kendi rızanızla paylaştığınız e-posta adresi.</li>
+                    <li><strong>Teknik Veriler:</strong> IP adresi, tarayıcı bilgileri ve kullanım süreleri.</li>
+                </ul>
+
+                <h2>3. Veri İşleme Amaçları</h2>
+                <p>Toplanan kişisel verileriniz şu amaçlarla işlenmektedir:</p>
+                <ul>
+                    <li>Platformun teknik işlevselliğinin sağlanması ve geliştirilmesi.</li>
+                    <li>Eğitimsel analizlerin yapılması ve simülasyonların optimize edilmesi.</li>
+                    <li>Hata tespiti ve güvenlik süreçlerinin yürütülmesi.</li>
+                    <li>İzniniz dahilinde güncellemeler hakkında bilgilendirme yapılması.</li>
+                </ul>
+
+                <h2>4. Veri Aktarımı</h2>
+                <p>Verileriniz, teknik altyapı hizmeti aldığımız güvenli bulut servisleri (Firebase vb.) dışında üçüncü taraflarla ticari amaçlarla asla paylaşılmaz. Adli makamların yasal talepleri bu kapsamın dışındadır.</p>
+
+                <h2>5. Haklarınız</h2>
+                <p>KVKK’nın 11. maddesi uyarınca bize başvurarak; verilerinizin işlenip işlenmediğini öğrenme, yanlış işlenmişse düzeltilmesini isteme ve verilerinizin silinmesini talep etme haklarına sahipsiniz.</p>
+
+                <div class="mt-12 p-6 bg-blue-900/20 border border-blue-500/30 rounded-xl text-center">
+                    <p class="text-sm text-gray-400 mb-0">Sorularınız için bizimle <a href="iletisim.html" class="text-[var(--secondary)] font-bold">iletişim</a> sayfası üzerinden irtibata geçebilirsiniz.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Disable Right Click
+        document.addEventListener('contextmenu', event => event.preventDefault());
+    </script>
+</body>
+</html>

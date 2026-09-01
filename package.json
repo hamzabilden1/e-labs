@@ -1,0 +1,14 @@
+{
+  "name": "elabs-web",
+  "version": "1.0.0",
+  "description": "E-LabS - Sanal Deney Laboratuvarı",
+  "scripts": {
+    "dev": "npx http-server -p 8080 -c-1 -o",
+    "build": "echo 'Static site - no build needed' && exit 0",
+    "serve": "npx http-server -p 8080 -c-1"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "javascript-obfuscator": "^4.1.1"
+  }
+}

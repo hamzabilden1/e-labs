@@ -1,0 +1,939 @@
+<!--
+ _____     _        _    ____  ____  
+| ____|   | |      / \  | __ )/ ___| 
+|  _| - _ | |     / _ \ |  _ \\___ \ 
+| |___ | || |___ / ___ \| |_) |___) |
+|_____||_||_____/_/   \_\____/|____/ 
+
+E-LABS - Sanal Deney Laboratuvarı
+Bu yazılımın kopyalanması, izinsiz çoğaltılması ve paylaşılması kesinlikle yasaktır.
+© 2026 E-LabS Team. Tüm Hakları Saklıdır.
+-->
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Performance: Preconnect to CDNs -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+
+    <!-- Tailwind CSS (Deferring compile logic for performance) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M8 4c0 4 8 8 8 12s-8 8-8 12' fill='none' stroke='%2300acc1' stroke-width='3' stroke-linecap='round'/><path d='M24 4c0 4-8 8-8 12s8 8 8 12' fill='none' stroke='%23ff4081' stroke-width='3' stroke-linecap='round'/><path d='M10 8h12M15 16h2M10 24h12' stroke='white' stroke-width='2' stroke-linecap='round' opacity='0.5'/></svg>">
+    <title>E-Labs - Sanal Deney Laboratuvarı</title>
+
+    <!-- Non-critical Styles: Defer with media trick -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
+
+    <!-- Google Fonts Optimized -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+
+    <!-- CUSTOM CSS (Critical) -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- External Libraries: Loaded first for stability -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+    <!-- Firebase SDK — jsdelivr.net üzerinden (Brave Shield uyumlu) -->
+    <script src="https://cdn.jsdelivr.net/npm/firebase@10.7.1/firebase-app-compat.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/firebase@10.7.1/firebase-firestore-compat.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/firebase@10.7.1/firebase-analytics-compat.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+    <!-- CUSTOM CSS -->
+    <link rel="stylesheet" href="css/style.css">
+
+</head>
+
+<body>
+
+    <div id="bg-particles" class="bg-particles"></div>
+
+    <!-- NAVBAR -->
+    <nav class="glass-panel sticky top-0 z-50 m-2 md:m-4 px-4 py-3 flex justify-between items-center backdrop-blur-xl">
+        <div class="flex items-center gap-3 cursor-pointer" onclick="app.showHome()">
+            <i class="fas fa-flask text-2xl md:text-3xl text-[var(--secondary)]"></i>
+            <div>
+                <h1 class="text-xl md:text-2xl font-bold tracking-wider">E-<span
+                        class="text-[var(--secondary)]">LABS</span></h1>
+            </div>
+        </div>
+        <div class="flex gap-3 items-center">
+
+            <a href="iletisim.html"
+                class="w-10 h-10 md:w-auto md:px-5 md:py-2.5 rounded-full md:rounded-xl bg-white/5 border border-white/10 hover:bg-[var(--accent)] hover:text-white transition-all duration-300 flex items-center justify-center gap-2 group shadow-lg">
+                <i class="fas fa-envelope text-sm group-hover:scale-110 transition-transform"></i>
+                <span class="hidden md:inline font-bold text-sm">İletişim</span>
+            </a>
+            <button id="btn-speed-mode" onclick="toggleSpeedMode()"
+                class="speed-toggle-btn"
+                title="Geçiş Hızı: Hızlı Mod">
+                <i id="speed-mode-icon" class="fas fa-bolt"></i>
+            </button>
+            <button onclick="app.showHome()"
+                class="w-10 h-10 flex items-center justify-center md:w-auto md:gap-2 text-gray-400 hover:text-[var(--secondary)] transition-colors">
+                <i class="fas fa-home"></i>
+                <span class="hidden md:inline text-sm font-medium">Ana Sayfa</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- VIEW: ANA SAYFA -->
+    <main id="view-home" class="container mx-auto p-4 animate-page-enter pb-24">
+        <header class="text-center mb-8 md:mb-12">
+            <h2
+                class="text-3xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-[var(--accent)]">
+                Sanal Laboratuvar Deneyleri
+            </h2>
+            <p class="text-white max-w-2xl mx-auto mb-8 text-sm md:text-base leading-relaxed">
+                Bilimi sadece okuma, yaşa. Yapay zeka destekli simülasyonlarla bilimin derinliklerini güvenle
+                keşfet.
+            </p>
+
+            <!-- Navigation and Content will be handled dynamically via JS -->
+
+            <!-- AI Search -->
+            <div class="max-w-2xl mx-auto relative group z-30">
+                <div
+                    class="absolute -inset-0.5 bg-gradient-to-r from-[var(--secondary)] to-[var(--accent)] rounded-full blur opacity-30 group-hover:opacity-60 transition duration-500">
+                </div>
+                <form id="hero-search-form"
+                    class="relative flex items-center bg-[#0a0a2e]/90 rounded-full border border-white/10 p-2 backdrop-blur-xl">
+                    <div class="pl-4 pr-3 text-[var(--accent)] text-xl"><i class="fas fa-robot animate-pulse"></i></div>
+                    <input type="text" id="hero-search-input"
+                        class="flex-grow bg-transparent border-none text-white placeholder-gray-400 focus:ring-0 focus:outline-none py-2 font-light"
+                        placeholder="Bilim asistanına sor..." autocomplete="off">
+                    <button type="submit"
+                        class="bg-[var(--secondary)] hover:bg-cyan-400 text-black w-10 h-10 rounded-full flex items-center justify-center transition hover:scale-105">
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="experiment-grid"></div>
+
+        <!-- YENİ: CHAT BÖLÜMÜ (Başlangıçta Gizli) -->
+        <div id="chat-section"
+            class="container mx-auto px-4 mt-16 hidden-view opacity-0 transform translate-y-10 transition-all duration-700">
+            <div
+                class="glass-panel max-w-4xl mx-auto h-[600px] flex flex-col relative overflow-hidden border-2 border-[var(--secondary)]/30 shadow-2xl">
+                <!-- Chat Header -->
+                <div class="p-4 bg-black/40 border-b border-white/10 flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+                            <i class="fas fa-robot text-white"></i>
+                        </div>
+                        <div>
+                        <h3 class="font-bold text-lg text-[var(--secondary)]">E-Labs Asistanı</h3>
+                            <p class="text-xs text-gray-400 flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                                Powered By Google Gemini
+                            </p>
+                        </div>
+                    </div>
+                    <button onclick="chatSystem.closeChat()" class="text-gray-400 hover:text-white"><i
+                            class="fas fa-chevron-up"></i> Kapat</button>
+                </div>
+
+                <!-- Chat Messages Area -->
+                <div id="chat-messages" class="flex-grow overflow-y-auto p-6 space-y-4 scroll-smooth"></div>
+
+                <!-- Chat Input Area -->
+                <div class="p-4 bg-black/40 border-t border-white/10">
+                    <form id="chat-form" class="flex gap-2">
+                        <input type="text" id="chat-input"
+                            class="flex-grow bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[var(--secondary)] transition"
+                            placeholder="Bir soru sorun..." autocomplete="off">
+                        <button type="submit"
+                            class="bg-[var(--secondary)] hover:bg-cyan-600 text-black font-bold px-6 py-2 rounded-lg transition flex items-center gap-2">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <footer class="mt-24 mb-8 glass-panel relative z-10 border-t border-white/10">
+            <div class="container mx-auto px-6 py-10">
+                <div class="flex flex-col md:flex-row justify-between gap-8">
+                    <div class="text-center md:text-left flex-1">
+                        <h4 class="text-2xl font-bold tracking-wider text-white mb-2">E-<span
+                                class="text-[var(--secondary)]">LABS</span></h4>
+                        <p class="text-sm text-gray-400 max-w-xs mx-auto md:mx-0">Lise öğrencileri için tasarlanmış,
+                            yapay zeka destekli yeni nesil sanal laboratuvar platformu.</p>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-8 text-sm justify-center md:justify-end flex-1">
+                        <div class="text-center md:text-left">
+                            <h5
+                                class="text-[var(--secondary)] font-bold mb-3 uppercase tracking-widest text-xs border-b border-white/10 pb-1">
+                                Danışman Öğretmen</h5>
+                            <p class="text-white font-medium"><i
+                                    class="fas fa-chalkboard-teacher text-[var(--accent)] mr-2"></i>Gülcan Gökmen</p>
+                        </div>
+
+                        <div class="text-center md:text-left">
+                            <h5
+                                class="text-[var(--secondary)] font-bold mb-3 uppercase tracking-widest text-xs border-b border-white/10 pb-1">
+                                Ekip Üyeleri</h5>
+                            <ul class="text-gray-300 space-y-2">
+                                <li class="hover:text-white transition cursor-pointer" onclick="showEmailModal('Hamza Bilden','hamzabilden1@gmail.com')"><i class="fas fa-user-astronaut text-blue-400 mr-2"></i>Hamza Bilden</li>
+                                <li class="hover:text-white transition cursor-pointer" onclick="showEmailModal('Mücahit Çaykara','mucahitcaykara06@gmail.com')"><i class="fas fa-user-astronaut text-blue-400 mr-2"></i>Mücahit Çaykara</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-10 pt-6 border-t border-white/10 text-center text-xs text-gray-500">
+                    <p>&copy; 2026 E-Labs. Tüm hakları saklıdır.</p>
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <!-- VIEW: DENEY ARAYÜZÜ -->
+    <main id="view-experiment" class="container mx-auto p-2 md:p-4 hidden-view animate-page-enter pb-20">
+        <!-- Top Bar & Info Section -->
+        <div class="glass-panel p-6 mb-6">
+            <!-- Header Row -->
+            <div
+                class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 border-b border-white/10 pb-4">
+                <div>
+                    <h2 id="exp-title" class="text-3xl font-bold text-[var(--secondary)] flex items-center gap-3">Deney
+                        Yükleniyor...</h2>
+                </div>
+                <div class="flex gap-3 w-full md:w-auto">
+                    <button onclick="app.showTheory()"
+                        class="btn btn-primary text-sm flex-1 md:flex-none">
+                        <i class="fas fa-book-open"></i> Ders Notu
+                    </button>
+                    <button onclick="app.showHome()"
+                        class="btn btn-danger text-sm flex-1 md:flex-none">
+                        <i class="fas fa-times"></i> Çıkış
+                    </button>
+                </div>
+            </div>
+
+            <!-- Info Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Card 1: Özet -->
+                <div class="bg-black/20 rounded-xl p-4 border border-white/5 relative overflow-hidden group">
+                    <div class="absolute -right-2 -top-2 text-6xl text-[var(--secondary)] opacity-5 rotate-12"><i
+                            class="fas fa-flask"></i></div>
+                    <h4
+                        class="text-sm font-bold text-[var(--secondary)] mb-2 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fas fa-info-circle"></i> Deney Hakkında
+                    </h4>
+                    <p id="exp-desc" class="text-xs text-gray-300 leading-relaxed">...</p>
+                </div>
+
+                <!-- Card 2: Yönerge -->
+                <div class="bg-black/20 rounded-xl p-4 border border-white/5 relative overflow-hidden group">
+                    <div class="absolute -right-2 -top-2 text-6xl text-purple-400 opacity-5 rotate-12"><i
+                            class="fas fa-sliders-h"></i></div>
+                    <h4 class="text-sm font-bold text-purple-400 mb-2 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fas fa-gamepad"></i> Nasıl Yapılır?
+                    </h4>
+                    <p id="exp-guide" class="text-xs text-gray-300 leading-relaxed">...</p>
+                </div>
+
+                <!-- Card 3: Amaç -->
+                <div class="bg-black/20 rounded-xl p-4 border border-white/5 relative overflow-hidden group">
+                    <div class="absolute -right-2 -top-2 text-6xl text-[var(--accent)] opacity-5 rotate-12"><i
+                            class="fas fa-bullseye"></i></div>
+                    <h4
+                        class="text-sm font-bold text-[var(--accent)] mb-2 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fas fa-check-circle"></i> Deneyin Amacı
+                    </h4>
+                    <p id="exp-objective-card" class="text-xs text-gray-300 leading-relaxed">...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:h-[650px]">
+
+            <!-- LEFT: Controls -->
+            <div
+                class="lg:col-span-3 glass-panel p-5 flex flex-col gap-6 h-auto lg:h-full overflow-y-auto order-2 lg:order-1">
+                <h3 class="text-lg font-bold border-b border-white/10 pb-2 text-gray-300">Kontrol Paneli</h3>
+                <div class="space-y-6" id="controls-container"></div>
+
+                <div class="mt-auto pt-4 space-y-3">
+
+                    <!-- Modern Süre Ayarı -->
+
+                    <div
+                        class="flex items-center justify-between bg-black/30 p-2 rounded-xl border border-white/10 backdrop-blur-sm">
+
+                        <div class="flex items-center gap-2 text-gray-300 text-sm ml-1">
+
+                            <div
+                                class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400">
+
+                                <i class="fas fa-hourglass-half"></i>
+
+                            </div>
+
+                            <span class="font-medium">Süre</span>
+
+                        </div>
+
+
+
+                        <div class="flex items-center bg-white/5 rounded-lg border border-white/10 p-0.5">
+
+
+
+                            <button onclick="simulation.adjustDuration(-5)"
+                                class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-md transition active:scale-95">
+
+
+
+                                <i class="fas fa-minus text-xs"></i>
+
+
+
+                            </button>
+
+
+
+                            <input type="number" id="duration-display" value="15"
+                                class="w-12 text-center font-bold font-mono text-xl text-[var(--secondary)] bg-transparent border-none focus:outline-none p-0"
+                                onchange="simulation.updateDurationInput(this.value)">
+
+
+
+                            <button onclick="simulation.adjustDuration(5)"
+                                class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-md transition active:scale-95">
+
+
+
+                                <i class="fas fa-plus text-xs"></i>
+
+
+
+                            </button>
+
+
+
+                        </div>
+
+                    </div>
+
+
+
+                    <button id="btn-start" onclick="simulation.toggle()"
+                        class="btn-glow w-full py-3 rounded-xl text-lg shadow-xl">
+                        <i class="fas fa-play"></i> Başlat
+                    </button>
+
+                    <button onclick="simulation.reset()"
+                        class="btn btn-danger w-full py-2.5 rounded-xl text-sm">
+                        <i class="fas fa-redo"></i> Sıfırla
+                    </button>
+
+                </div>
+            </div>
+
+            <!-- CENTER: Canvas -->
+            <div
+                class="lg:col-span-6 glass-panel p-1 relative bg-black/50 flex flex-col order-1 lg:order-2 h-[400px] lg:h-full">
+                <div
+                    class="absolute top-3 right-3 bg-black/60 px-3 py-1 rounded text-xs z-10 font-mono border border-white/10">
+                    Süre: <span id="timer-display" class="text-[var(--secondary)]">00:00</span>
+                </div>
+                <button id="toggle-3d-btn" onclick="toggleView3D()"
+                    class="absolute top-3 left-3 bg-black/60 hover:bg-black/80 px-3 py-1 rounded text-xs z-10 font-mono border border-white/10 transition flex items-center gap-2">
+                    <i class="fas fa-cube"></i> 3D Görünüm
+                </button>
+                <!-- Tam Ekran Butonu (sadece 3D aktifken görünür) -->
+                <button id="fs-3d-btn" onclick="simulation3D.toggleFullscreen()"
+                    title="Tam Ekran"
+                    class="hidden absolute top-3 left-[140px] bg-black/60 hover:bg-cyan-500/30 w-8 h-8 rounded z-10 font-mono border border-white/10 transition flex items-center justify-center text-white/70 hover:text-white">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <canvas id="simCanvas" class="w-full h-full object-contain rounded-lg"></canvas>
+                <div id="sim3DCanvas" class="w-full h-full rounded-lg hidden"></div>
+            </div>
+
+            <!-- RIGHT: Data -->
+            <div class="lg:col-span-3 glass-panel p-4 flex flex-col gap-4 h-[500px] lg:h-full order-3 overflow-hidden">
+                <!-- Chart -->
+                <div class="flex-1 min-h-0 flex flex-col bg-black/20 rounded-xl p-3 border border-white/5">
+                    <div class="flex-shrink-0 mb-2">
+                        <h4 class="font-bold text-xs text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                            <i class="fas fa-chart-line text-[var(--secondary)]"></i> Canlı Grafik
+                        </h4>
+                        <p id="chart-hint"
+                            class="text-[11px] text-blue-300/70 mt-1 font-normal tracking-wide leading-tight">
+                            Yükleniyor...</p>
+                    </div>
+                    <div class="flex-grow relative min-h-0 w-full">
+                        <canvas id="dataChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div class="flex-1 min-h-0 flex flex-col bg-black/20 rounded-xl border border-white/5 overflow-hidden">
+                    <div class="flex-shrink-0 p-3 pb-2 bg-black/20 border-b border-white/5">
+                        <h4 class="font-bold text-xs text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                            <i class="fas fa-table text-[var(--secondary)]"></i> Veri Kaydı
+                        </h4>
+                        <p id="table-hint"
+                            class="text-[11px] text-blue-300/70 mt-1 font-normal tracking-wide leading-tight">
+                            Yükleniyor...</p>
+                    </div>
+                    <div class="flex-grow overflow-y-auto custom-scrollbar">
+                        <table class="w-full text-xs text-left border-collapse">
+                            <thead class="sticky top-0 bg-[#0a0a2e] shadow-md z-10 text-[var(--secondary)]">
+                                <tr>
+                                    <th class="p-3 font-semibold">Zaman</th>
+                                    <th class="p-3 font-semibold" id="th-input">Girdi</th>
+                                    <th class="p-3 font-semibold" id="th-output">Çıktı</th>
+                                </tr>
+                            </thead>
+                            <tbody id="data-table-body" class="text-gray-300 divide-y divide-white/5"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Report Button -->
+                <div class="flex-shrink-0 mt-auto">
+                    <button onclick="reportSystem.showWizard()" id="btn-open-report-wizard"
+                        class="btn btn-report w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-3 group">
+                        <i class="fas fa-file-signature text-lg group-hover:rotate-12 transition-transform"></i>
+                        Deney Raporu Oluştur
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- REPORT WIZARD MODAL — Premium Redesign -->
+    <div id="report-wizard-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 hidden-view transition-all duration-300">
+        <div class="wizard-card wizard-animate-in">
+
+            <!-- ── HEADER BAR ── -->
+            <div class="wizard-header-bar">
+                <div class="flex items-center gap-3 z-10 relative">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: rgba(0,172,193,0.18); border: 1px solid rgba(0,172,193,0.3);">
+                        <i class="fas fa-wand-magic-sparkles text-[var(--secondary)]"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold text-white tracking-tight leading-none mb-0.5">Rapor Sihirbazı</h2>
+                        <p class="text-[10px] text-cyan-300/60 font-medium">Kişiselleştirilmiş deney raporu oluştur</p>
+                    </div>
+                </div>
+                <button onclick="reportSystem.closeWizard()"
+                    class="z-10 relative w-8 h-8 rounded-lg flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all">
+                    <i class="fas fa-times text-sm"></i>
+                </button>
+            </div>
+
+            <!-- ── STEP DOTS ── -->
+            <div class="wizard-steps">
+                <div class="wizard-step-dot active"></div>
+                <div class="wizard-step-dot active"></div>
+                <div class="wizard-step-dot active"></div>
+                <div class="wizard-step-dot" style="opacity:0.35;"></div>
+            </div>
+
+            <!-- ── SCROLLABLE BODY ── -->
+            <div class="p-6 space-y-7 overflow-y-auto custom-scrollbar" style="max-height: 62vh;">
+
+                <!-- §1 RAPOR FORMATI -->
+                <div>
+                    <p class="wizard-section-label"><i class="fas fa-layer-group text-[8px]"></i> Rapor Formatı</p>
+                    <div class="grid grid-cols-3 gap-3" id="wizard-type-group">
+
+                        <!-- Standart -->
+                        <button onclick="reportSystem.setPref('type', 'standard')"
+                            class="wizard-type-card active"
+                            data-pref="type" data-value="standard"
+                            style="--wizard-accent: rgba(0,172,193,0.12); --wizard-border: #00acc1;">
+                            <div class="card-icon" style="background: rgba(0,172,193,0.12); color: #00acc1;">
+                                <i class="fas fa-file-lines"></i>
+                            </div>
+                            <span class="card-title">Standart</span>
+                            <span class="text-[9px] text-white/30">Hazır şablon</span>
+                        </button>
+
+                        <!-- AI Analiz -->
+                        <button onclick="reportSystem.setPref('type', 'ai_direct')"
+                            class="wizard-type-card"
+                            data-pref="type" data-value="ai_direct"
+                            style="--wizard-accent: rgba(139,92,246,0.12); --wizard-border: #8b5cf6;">
+                            <div class="card-icon" style="background: rgba(139,92,246,0.12); color: #8b5cf6;">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <span class="card-title">AI Analiz</span>
+                            <span class="card-badge">Önerilen</span>
+                        </button>
+
+                        <!-- Prompt -->
+                        <button onclick="reportSystem.setPref('type', 'prompt')"
+                            class="wizard-type-card"
+                            data-pref="type" data-value="prompt"
+                            style="--wizard-accent: rgba(251,146,60,0.12); --wizard-border: #fb923c;">
+                            <div class="card-icon" style="background: rgba(251,146,60,0.12); color: #fb923c;">
+                                <i class="fas fa-terminal"></i>
+                            </div>
+                            <span class="card-title">Prompt</span>
+                            <span class="text-[9px] text-white/30">Manuel AI</span>
+                        </button>
+
+                    </div>
+                </div>
+
+                <!-- §2 AYARLAR (Audience + Detail) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                    <!-- Hedef Kitle -->
+                    <div>
+                        <p class="wizard-section-label"><i class="fas fa-users text-[8px]"></i> Hedef Kitle</p>
+                        <div class="relative">
+                            <div class="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--secondary)] opacity-60 pointer-events-none text-xs">
+                                <i class="fas fa-user-graduate"></i>
+                            </div>
+                            <select id="wizard-audience" onchange="reportSystem.setPref('audience', this.value)"
+                                class="wizard-select pl-8">
+                                <option value="student">🎓 Öğrenci</option>
+                                <option value="teacher">📋 Öğretmen</option>
+                                <option value="scientific">🔬 Bilimsel</option>
+                                <option value="kid">🚀 Genç Kaşif</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Detay Seviyesi -->
+                    <div>
+                        <p class="wizard-section-label"><i class="fas fa-sliders text-[8px]"></i> Detay Seviyesi</p>
+                        <div class="wizard-detail-track">
+                            <div class="wizard-detail-fill" id="wizard-detail-fill" style="width: 50%;"></div>
+                            <input type="range" min="1" max="3" value="2" step="1" id="wizard-detail"
+                                class="wizard-range"
+                                oninput="reportSystem.setPref('detail', this.value); reportSystem.updateDetailUI(this.value)">
+                        </div>
+                        <div class="detail-levels">
+                            <button class="detail-level-btn" onclick="reportSystem.updateDetailUI(1)">Özet</button>
+                            <button class="detail-level-btn active" onclick="reportSystem.updateDetailUI(2)">Orta</button>
+                            <button class="detail-level-btn" onclick="reportSystem.updateDetailUI(3)">Detaylı</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- §3 İÇERİK BİLEŞENLERİ -->
+                <div>
+                    <p class="wizard-section-label"><i class="fas fa-puzzle-piece text-[8px]"></i> İçerik Bileşenleri</p>
+                    <div class="grid grid-cols-2 gap-2.5">
+
+                        <!-- Teorik Notlar -->
+                        <label class="wizard-comp-item checked"
+                            style="--comp-color: #00acc1; --comp-rgb: 0,172,193;">
+                            <input type="checkbox" id="check-theory" checked
+                                onchange="reportSystem.toggleCompItem(this, 'theory')">
+                            <div class="wizard-comp-check"><i class="fas fa-check" style="color:#0d0d2b;"></i></div>
+                            <div class="wizard-comp-icon" style="background: rgba(0,172,193,0.1); color: #00acc1;">
+                                <i class="fas fa-book-open"></i>
+                            </div>
+                            <span class="wizard-comp-text">Teorik Notlar</span>
+                        </label>
+
+                        <!-- Veri Tablosu -->
+                        <label class="wizard-comp-item checked"
+                            style="--comp-color: #60a5fa; --comp-rgb: 96,165,250;">
+                            <input type="checkbox" id="check-data" checked
+                                onchange="reportSystem.toggleCompItem(this, 'data')">
+                            <div class="wizard-comp-check"><i class="fas fa-check" style="color:#0d0d2b;"></i></div>
+                            <div class="wizard-comp-icon" style="background: rgba(96,165,250,0.1); color: #60a5fa;">
+                                <i class="fas fa-table"></i>
+                            </div>
+                            <span class="wizard-comp-text">Veri Tablosu</span>
+                        </label>
+
+                        <!-- Grafikler -->
+                        <label class="wizard-comp-item checked"
+                            style="--comp-color: #4ade80; --comp-rgb: 74,222,128;">
+                            <input type="checkbox" id="check-graphs" checked
+                                onchange="reportSystem.toggleCompItem(this, 'graphs')">
+                            <div class="wizard-comp-check"><i class="fas fa-check" style="color:#0d0d2b;"></i></div>
+                            <div class="wizard-comp-icon" style="background: rgba(74,222,128,0.1); color: #4ade80;">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <span class="wizard-comp-text">Grafikler</span>
+                        </label>
+
+                        <!-- Matematiksel -->
+                        <label class="wizard-comp-item"
+                            style="--comp-color: #c084fc; --comp-rgb: 192,132,252;">
+                            <input type="checkbox" id="check-math"
+                                onchange="reportSystem.toggleCompItem(this, 'math')">
+                            <div class="wizard-comp-check"><i class="fas fa-check" style="color:#0d0d2b;"></i></div>
+                            <div class="wizard-comp-icon" style="background: rgba(192,132,252,0.1); color: #c084fc;">
+                                <i class="fas fa-square-root-variable"></i>
+                            </div>
+                            <span class="wizard-comp-text">Matematiksel</span>
+                        </label>
+
+                    </div>
+                </div>
+
+            </div><!-- /scrollable body -->
+
+            <!-- ── CTA FOOTER ── -->
+            <div class="p-5 border-t" style="border-color: rgba(255,255,255,0.05); background: rgba(0,0,0,0.25);">
+                <button onclick="reportSystem.runWizard()" id="btn-wizard-run" class="wizard-cta-btn">
+                    <i class="fas fa-wand-magic-sparkles text-sm"></i>
+                    Raporu Oluştur
+                    <span class="cta-arrow"><i class="fas fa-arrow-right"></i></span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast-notification" 
+        class="fixed top-6 right-6 z-[200] bg-green-600 text-white px-6 py-4 rounded-lg shadow-2xl transition-all duration-300 flex items-center gap-3" 
+        style="transform: translateX(120%); opacity: 0; pointer-events: none;">
+        <i class="fas fa-check-circle text-xl"></i>
+        <span id="toast-message" class="font-semibold">Prompt kopyalandı!</span>
+    </div>
+
+    <!-- MODALS -->
+    <!-- Theory Modal -->
+    <div id="theory-modal"
+        class="fixed inset-0 z-[100] bg-black/95 hidden-view flex items-center justify-center p-4 backdrop-blur-md">
+        <div class="glass-panel w-full max-w-4xl max-h-[85vh] flex flex-col animate-scaleIn">
+            <div class="flex justify-between items-center p-6 border-b border-white/10">
+                <h2 class="text-2xl font-bold text-[var(--secondary)]">Ders Notları</h2>
+                <button onclick="document.getElementById('theory-modal').classList.add('hidden-view')"
+                    class="text-2xl hover:text-red-400"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="theory-content" class="p-8 overflow-y-auto markdown-content"></div>
+        </div>
+    </div>
+
+    <!-- ANKET MODALİ v2 -->
+    <div id="survey-modal-v2" class="hidden fixed inset-0 z-[300] flex items-center justify-center p-4"
+        style="background:rgba(0,0,10,0.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);">
+        <div class="sv-modal-card">
+            <!-- Top gradient line -->
+            <div style="height:3px;background:linear-gradient(90deg,transparent 0%,#00bcd4 40%,#7c3aed 70%,transparent 100%);flex-shrink:0;"></div>
+            <!-- Header -->
+            <div style="padding:22px 26px 14px;display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0;">
+                <div>
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
+                        <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#00bcd4,#7c3aed);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                            <i class="fas fa-clipboard-list" style="color:#fff;font-size:14px;"></i>
+                        </div>
+                        <h2 style="font-size:1.05rem;font-weight:800;color:#fff;margin:0;letter-spacing:-0.02em;">Kullanıcı Deneyim Anketi</h2>
+                    </div>
+                    <p style="font-size:0.72rem;color:rgba(255,255,255,0.38);margin:0 0 0 50px;">Görüşleriniz E-LabS'ı şekillendiriyor ✨</p>
+                </div>
+                <button id="survey-close-btn" onclick="surveySystem.close()" class="sv-close-btn">
+                    <i class="fas fa-times" style="font-size:11px;"></i>
+                </button>
+            </div>
+            <!-- Step dots + label -->
+            <div style="padding:0 26px 12px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+                <div style="display:flex;gap:7px;align-items:center;">
+                    <div class="sv-dot active" id="sv-dot-1"></div>
+                    <div class="sv-dot" id="sv-dot-2"></div>
+                    <div class="sv-dot" id="sv-dot-3"></div>
+                    <div class="sv-dot" id="sv-dot-4"></div>
+                </div>
+                <span id="survey-step-indicator" style="font-size:0.68rem;color:rgba(0,188,212,0.7);font-family:monospace;font-weight:700;letter-spacing:0.04em;">Adım 1 / 4</span>
+            </div>
+            <!-- Progress bar -->
+            <div style="height:2px;background:rgba(255,255,255,0.05);flex-shrink:0;">
+                <div id="survey-progress" style="height:100%;background:linear-gradient(90deg,#00bcd4,#7c3aed);transition:width 0.5s cubic-bezier(.4,0,.2,1);width:25%;"></div>
+            </div>
+            <!-- Body -->
+            <div id="survey-body" class="custom-scrollbar" style="padding:22px 26px;overflow-y:auto;flex:1;max-height:56vh;"></div>
+            <!-- Never ask footer -->
+            <div id="survey-never-ask-btn" style="padding:10px 26px;border-top:1px solid rgba(255,255,255,0.05);display:none;flex-shrink:0;">
+                <button onclick="surveySystem.neverAskAgain()" class="sv-never-btn">
+                    <i class="fas fa-ban" style="margin-right:6px;font-size:0.65rem;"></i>Bir Daha Sorma
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Prompt Modal -->
+    <div id="prompt-modal"
+        class="fixed inset-0 z-[100] bg-black/95 hidden-view flex items-center justify-center p-4 backdrop-blur-md">
+        <div class="glass-panel w-full max-w-3xl max-h-[85vh] flex flex-col animate-scaleIn">
+            <div class="flex justify-between items-center p-6 border-b border-white/10">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center">
+                        <i class="fas fa-magic text-white"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-[var(--secondary)]">Yapay Zeka ile Rapor Oluştur</h2>
+                </div>
+                <button onclick="document.getElementById('prompt-modal').classList.add('hidden-view')"
+                    class="text-2xl hover:text-red-400 transition"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto flex-grow">
+                <!-- Bilgilendirme -->
+                <div class="mb-6 p-4 bg-blue-900/30 border border-blue-500/40 rounded-lg">
+                    <p class="text-gray-200 text-sm leading-relaxed">
+                        Aşağıdaki prompt'u kopyalayıp tercih ettiğiniz yapay zekaya yapıştırarak detaylı deney raporu oluşturabilirsiniz.
+                    </p>
+                    <p class="text-cyan-400 text-sm font-semibold mt-2">
+                        💡 (Gemini Önerilir)
+                    </p>
+                </div>
+
+                <!-- Prompt Önizleme -->
+                <div class="mb-6">
+                    <button onclick="document.getElementById('prompt-preview').classList.toggle('hidden')" 
+                        class="flex items-center gap-2 text-sm font-semibold text-[var(--accent)] hover:text-[var(--secondary)] transition">
+                        <i class="fas fa-eye"></i>
+                        <span>Prompt Önizleme</span>
+                        <i class="fas fa-chevron-down text-xs"></i>
+                    </button>
+                    <div id="prompt-preview" class="hidden mt-3 p-4 bg-black/40 border border-white/20 rounded-lg max-h-60 overflow-y-auto">
+                        <pre id="prompt-preview-text" class="text-xs text-gray-300 whitespace-pre-wrap font-mono"></pre>
+                    </div>
+                </div>
+
+                <!-- Kopyala Butonu -->
+                <button onclick="reportSystem.copyPrompt()" 
+                    class="w-full bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] hover:brightness-110 text-white py-4 rounded-lg font-bold text-base shadow-lg flex items-center justify-center gap-3 transition transform active:scale-95 border border-white/10 mb-3">
+                    <i class="fas fa-copy"></i>
+                    <span>Promptu Kopyala</span>
+                </button>
+
+                <!-- Gemini Aç Butonu -->
+                <button onclick="reportSystem.openGemini()" 
+                    class="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:brightness-110 text-white py-4 rounded-lg font-bold text-base shadow-lg flex items-center justify-center gap-3 transition transform active:scale-95 border border-white/10">
+                    <i class="fas fa-robot"></i>
+                    <span>Promptu Kopyala ve Gemini'yi Aç <span class="text-sm font-normal opacity-80">(İsteğe Bağlı)</span></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- İKNA POPUP -->
+    <div id="survey-persuade" class="hidden fixed inset-0 z-[400] flex items-center justify-center p-4"
+        style="background:rgba(0,0,10,0.82);backdrop-filter:blur(10px);">
+        <div class="sv-persuade-card">
+            <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,#00bcd4,#7c3aed,transparent);"></div>
+            <div style="font-size:2.8rem;margin-bottom:14px;">🙏</div>
+            <h3 style="font-size:1.05rem;font-weight:800;color:#fff;margin:0 0 10px;">Bir dakikanızı ayırır mısınız?</h3>
+            <p style="color:rgba(255,255,255,0.5);font-size:0.83rem;line-height:1.7;margin:0 0 26px;">
+                Uygulamaı geliştirmemiz için <strong style="color:#fff;">sadece 1 dakikanızı</strong> ayırır mısınız?<br>
+                <span style="color:#fbbf24;">Görüşleriniz bizim için çok kıymetli.</span>
+            </p>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <button onclick="surveySystem.persuadeBack()" class="sv-btn-next" style="width:100%;padding:13px;">
+                    ✅ Peki, 1 Dakikamı Ayırabilirim
+                </button>
+                <button onclick="surveySystem.persuadeSkip()" class="sv-never-btn" style="width:100%;padding:10px;">
+                    Hayır, Şimdlik Geç
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Modal -->
+    <div id="report-modal"
+        class="fixed inset-0 z-[100] bg-black/90 hidden-view flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="glass-panel w-full max-w-3xl max-h-[90vh] flex flex-col animate-scaleIn relative">
+            <button onclick="document.getElementById('report-modal').classList.add('hidden-view'); surveySystem.triggerSurvey()"
+                class="absolute top-4 right-4 text-2xl hover:text-red-400"><i class="fas fa-times"></i></button>
+
+            <div class="p-8 overflow-y-auto" id="report-container">
+                <div id="report-loading" class="flex flex-col items-center justify-center py-20 hidden-view">
+                    <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4">
+                    </div>
+                    <p class="text-blue-300 animate-pulse">Yapay zeka deney verilerini analiz ediyor ve rapor yazıyor...
+                    </p>
+                </div>
+                <div id="report-content" class="markdown-content"></div>
+            </div>
+
+            <div class="p-4 border-t border-white/10 flex justify-end gap-3 bg-black/20">
+                <button onclick="reportSystem.downloadMarkdown()"
+                    class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded text-white text-sm"><i
+                        class="fab fa-markdown"></i> İndir (.md)</button>
+                <button onclick="reportSystem.downloadPDF()"
+                    class="bg-red-600 hover:bg-red-500 px-4 py-2 rounded text-white text-sm"><i
+                        class="fas fa-file-pdf"></i> İndir (PDF)</button>
+                <button onclick="reportSystem.downloadPDF()"
+                    class="bg-[var(--secondary)] text-black px-4 py-2 rounded font-bold text-sm"><i
+                        class="fas fa-print"></i> Yazdır</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Spacer -->
+    <div style="height: 60px; background: linear-gradient(to top, rgba(0,0,0,0.5), transparent);"></div>
+
+    <!-- MOBILE WARNING MODAL -->
+    <div id="mobile-warning-modal" class="fixed inset-0 z-[500] bg-black/90 hidden-view flex items-center justify-center p-4 backdrop-blur-md">
+        <div class="glass-panel w-full max-w-sm p-6 text-center animate-scaleIn border border-[var(--secondary)]/30">
+            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/20">
+                <i class="fas fa-desktop text-2xl text-white"></i>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">Bilgisayar Önerilir</h3>
+            <p class="text-gray-300 text-sm mb-6 leading-relaxed">
+                E-Labs'ı mobilde deneyimleyebilirsiniz ancak <strong class="text-[var(--secondary)]">en iyi 3D ve arayüz deneyimi</strong> için bir bilgisayar kullanmanız tavsiye edilir.
+            </p>
+            <button onclick="document.getElementById('mobile-warning-modal').classList.add('hidden-view')" class="btn-glow w-full py-3 rounded-xl text-sm font-bold tracking-wider">
+                ANLADIM, DEVAM ET
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        // Show mobile warning once per session
+        document.addEventListener('DOMContentLoaded', () => {
+            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                if (!sessionStorage.getItem('mobileWarningShown')) {
+                    document.getElementById('mobile-warning-modal').classList.remove('hidden-view');
+                    sessionStorage.setItem('mobileWarningShown', 'true');
+                }
+            }
+        });
+    </script>
+
+    <!-- SECURITY UTILITIES -->
+    <script src="js/security.js"></script>
+
+    <!-- BUSINESS LOGIC (BACKEND SIMULATION) -->
+    <!-- Firebase SDK Stub: Brave Shield SDK'yı tamamen bloklarsa çökmeyi önler -->
+    <script>
+    if (typeof firebase === 'undefined') {
+        console.warn('[E-LabS] Firebase SDK yüklenemedi (Brave Shield?). Stub aktif.');
+        var _noop = function(){};
+        var _noopP = function(){ return Promise.resolve(); };
+        var _stubCol = { add: _noopP, doc: function(){ return { set: _noopP, get: _noopP }; }, orderBy: function(){ return { limit: function(){ return { get: function(){ return Promise.resolve({ docs: [] }); } }; } }; } };
+        window.firebase = {
+            initializeApp: _noop,
+            firestore: function() {
+                var fs = { collection: function(){ return _stubCol; }, enablePersistence: _noopP };
+                fs.FieldValue = { serverTimestamp: function(){ return new Date(); } };
+                return fs;
+            },
+            analytics: function() { return { logEvent: _noop }; },
+            auth: function() {
+                return { onAuthStateChanged: _noop, signInWithPopup: _noopP, signOut: _noopP };
+            }
+        };
+        window.firebase.firestore.FieldValue = { serverTimestamp: function(){ return new Date(); } };
+        window.firebase.auth.GoogleAuthProvider = function(){};
+    }
+    </script>
+    <script src="js/firebase-config.js"></script>
+    <script src="js/survey.js"></script>
+    <script src="js/engine.js"></script>
+    
+    <!-- 3D SIMULATION ENGINE -->
+    <script src="js/simulation3d.js"></script>
+    
+
+    <!-- UI CONTROLLER (FRONTEND) -->
+    <script src="js/ui.js"></script>
+
+    <!-- EMAIL MODAL -->
+    <div id="email-modal" class="hidden fixed inset-0 z-[500] flex items-center justify-center p-4" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);">
+        <div class="glass-panel w-full max-w-sm p-8 text-center animate-scaleIn border border-[var(--secondary)]/50 relative">
+            <button onclick="closeEmailModal()" class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-white hover:bg-white/10 transition">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-[var(--secondary)]/30 to-blue-600/30 flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-envelope text-2xl text-[var(--secondary)]"></i>
+            </div>
+            <h3 id="email-modal-name" class="text-lg font-bold text-white mb-1"></h3>
+            <p class="text-xs text-gray-500 mb-4">E-posta adresi</p>
+            <div id="email-modal-address" class="bg-black/40 border border-[var(--secondary)]/30 rounded-xl px-4 py-3 font-mono text-sm text-[var(--secondary)] mb-5 select-all break-all"></div>
+            <button onclick="copyEmail()" class="w-full btn-glow py-2.5 rounded-xl font-bold text-black text-sm flex items-center justify-center gap-2">
+                <i class="fas fa-copy"></i> Kopyala
+            </button>
+        </div>
+    </div>
+
+    <script>
+    let currentEmail = '';
+    function showEmailModal(name, email) {
+        currentEmail = email;
+        document.getElementById('email-modal-name').textContent = name;
+        document.getElementById('email-modal-address').textContent = email;
+        document.getElementById('email-modal').classList.remove('hidden');
+    }
+    function closeEmailModal() {
+        document.getElementById('email-modal').classList.add('hidden');
+    }
+    function copyEmail() {
+        navigator.clipboard.writeText(currentEmail).then(() => {
+            closeEmailModal();
+        });
+    }
+    // Modal dışına tıklayınca kapat
+    document.getElementById('email-modal').addEventListener('click', function(e) {
+        if (e.target === this) closeEmailModal();
+    });
+    </script>
+
+
+    <!-- KVKK COOKIE BANNER -->
+    <div id="kvkk-banner" class="fixed bottom-6 left-6 right-6 z-[1000] hidden animate-slide-up">
+        <div class="glass-panel p-6 border-t-4 border-t-[var(--secondary)] flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl bg-[#0a0a2e]/90 backdrop-blur-xl">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center text-2xl text-blue-400 border border-blue-500/30">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold text-white text-lg">KVKK ve Çerez Bilgilendirmesi</h4>
+                    <p class="text-sm text-gray-200 max-w-2xl leading-relaxed">
+                        E-LabS, deneyiminizi geliştirmek ve veri güvenliğinizi sağlamak için yasal düzenlemelere uygun çerezler kullanır. 
+                        Sitemizi kullanarak <a href="kvkk.html" class="text-[var(--secondary)] font-bold underline">Aydınlatma Metni</a>'ni kabul etmiş sayılırsınız.
+                    </p>
+                </div>
+            </div>
+            <div class="flex gap-3 w-full md:w-auto">
+                <button onclick="acceptKVKK()" class="btn-glow flex-1 md:flex-none px-10 py-3 rounded-xl font-bold text-black text-sm whitespace-nowrap">
+                    Kabul Ediyorum
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Disable Right Click
+        document.addEventListener('contextmenu', event => event.preventDefault());
+
+        // KVKK Logic — try/catch ile Brave Shield uyumlu
+        function acceptKVKK() {
+            try { localStorage.setItem('elabs_kvkk_accepted', 'true'); } catch(e) {}
+            document.getElementById('kvkk-banner').classList.add('hidden');
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            let accepted = false;
+            try { accepted = !!localStorage.getItem('elabs_kvkk_accepted'); } catch(e) {}
+            if (!accepted) {
+                setTimeout(() => {
+                    document.getElementById('kvkk-banner').classList.remove('hidden');
+                }, 1000);
+            }
+        });
+    </script>
+</body>
+
+</html>
